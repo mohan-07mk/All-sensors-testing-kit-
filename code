@@ -1,0 +1,165 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <DHT.h>
+
+// OLED setup
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// DHT
+#define DHTPIN 2
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// Pins
+#define IR_PIN 3
+#define TRIG_PIN 4
+#define ECHO_PIN 5
+#define FLAME_PIN 6
+#define PIR_PIN 7
+#define BUTTON_PIN 8
+#define MQ2_PIN A0
+#define LDR_PIN A1
+#define SOIL_PIN A2
+#define SOUND_PIN A3
+#define ADXL_X A4
+#define ADXL_Y A5
+#define ADXL_Z A6
+
+int menuIndex = 0;
+unsigned long lastPress = 0;
+
+void setup() {
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(IR_PIN, INPUT);
+  pinMode(FLAME_PIN, INPUT);
+  pinMode(PIR_PIN, INPUT);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  dht.begin();
+  
+  Serial.begin(9600);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    while (1);
+  }
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("All Sensors Kit");
+  display.display();
+  delay(1500);
+}
+
+void loop() {
+  if (digitalRead(BUTTON_PIN) == LOW && millis() - lastPress > 300) {
+    menuIndex = (menuIndex + 1) % 10;
+    lastPress = millis();
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+
+  switch (menuIndex) {
+    case 0: showMQ2(); break;
+    case 1: showDHT11(); break;
+    case 2: showIR(); break;
+    case 3: showUltrasonic(); break;
+    case 4: showFlame(); break;
+    case 5: showLDR(); break;
+    case 6: showSoil(); break;
+    case 7: showSound(); break;
+    case 8: showPIR(); break;
+    case 9: showADXL(); break;
+  }
+
+  display.display();
+  delay(200);
+}
+
+void showMQ2() {
+  int gasValue = analogRead(MQ2_PIN);
+  display.setCursor(0, 0);
+  display.println("MQ-2 Gas Sensor");
+  display.print("Value: "); display.println(gasValue);
+}
+
+void showDHT11() {
+  float temp = dht.readTemperature();
+  float hum = dht.readHumidity();
+  display.setCursor(0, 0);
+  display.println("DHT11 Temp & Hum");
+  display.print("Temp: "); display.print(temp); display.println(" C");
+  display.print("Hum: "); display.print(hum); display.println(" %");
+}
+
+void showIR() {
+  int val = digitalRead(IR_PIN);
+  display.setCursor(0, 0);
+  display.println("IR Sensor");
+  display.print("Object: ");
+  display.println(val == LOW ? "Detected" : "None");
+}
+
+void showUltrasonic() {
+  long duration;
+  digitalWrite(TRIG_PIN, LOW); delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH); delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  float distance = duration * 0.034 / 2;
+  display.setCursor(0, 0);
+  display.println("Ultrasonic Sensor");
+  display.print("Dist: "); display.print(distance); display.println(" cm");
+}
+
+void showFlame() {
+  int val = digitalRead(FLAME_PIN);
+  display.setCursor(0, 0);
+  display.println("Flame Sensor");
+  display.print("Flame: ");
+  display.println(val == LOW ? "Detected" : "Safe");
+}
+
+void showLDR() {
+  int val = analogRead(LDR_PIN);
+  display.setCursor(0, 0);
+  display.println("LDR Light Sensor");
+  display.print("Value: "); display.println(val);
+}
+
+void showSoil() {
+  int val = analogRead(SOIL_PIN);
+  display.setCursor(0, 0);
+  display.println("Soil Moisture");
+  display.print("Value: "); display.println(val);
+}
+
+void showSound() {
+  int val = analogRead(SOUND_PIN);
+  display.setCursor(0, 0);
+  display.println("Sound Sensor");
+  display.print("Level: "); display.println(val);
+}
+
+void showPIR() {
+  int val = digitalRead(PIR_PIN);
+  display.setCursor(0, 0);
+  display.println("PIR Motion Sensor");
+  display.print("Motion: ");
+  display.println(val == HIGH ? "Detected" : "None");
+}
+
+void showADXL() {
+  int x = analogRead(ADXL_X);
+  int y = analogRead(ADXL_Y);
+  int z = analogRead(ADXL_Z);
+  display.setCursor(0, 0);
+  display.println("ADXL335 Gyro");
+  display.print("X: "); display.println(x);
+  display.print("Y: "); display.println(y);
+  display.print("Z: "); display.println(z);
+}
